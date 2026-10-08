@@ -1,7 +1,10 @@
 package com.example.ui
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,13 +18,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.R
 import com.example.data.firebase.FirebaseHarvestService
 import com.example.data.model.FarmScale
 
@@ -51,34 +57,77 @@ fun HarvestApp(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Filled.Spa,
-                            contentDescription = "The Harvest Logo",
-                            tint = Color(0xFFFFD54F),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "The Harvest",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = onBarColor
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .border(1.5.dp, Color(0xFFFFD54F), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.harvest_logo_premium_1791454573312),
+                                contentDescription = "The Harvest Emblem",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
                             )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "The Harvest",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = onBarColor
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    color = Color(0xFF22C55E).copy(alpha = 0.25f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text(
+                                        text = "● LIVE",
+                                        color = Color(0xFF4ADE80),
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
                             Text(
                                 text = if (state.firebaseUser != null) {
                                     "Connected • ${state.firebaseUser?.displayName ?: "Farmer"}"
                                 } else {
-                                    "Multi-Agent AI • Scale Ag"
+                                    "${state.selectedFarm.name} • ${state.selectedFarm.scale.displayName}"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = onBarColor.copy(alpha = 0.8f),
+                                color = onBarColor.copy(alpha = 0.85f),
                                 fontSize = 11.sp
                             )
                         }
                     }
                 },
                 actions = {
+                    // Live Telemetry Refresh Button
+                    IconButton(
+                        onClick = { viewModel.refreshLiveTelemetry() },
+                        modifier = Modifier.testTag("btn_refresh_live_telemetry")
+                    ) {
+                        if (state.isWeatherLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = Color(0xFFFFD54F)
+                            )
+                        } else {
+                            Icon(
+                                Icons.Filled.Refresh,
+                                contentDescription = "Refresh Realtime Satellite Feed",
+                                tint = Color(0xFFFFD54F)
+                            )
+                        }
+                    }
+
                     // Google Sign In & Sync
                     if (state.firebaseUser != null) {
                         IconButton(
@@ -166,6 +215,31 @@ fun HarvestApp(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Spray Window & Drift Risk") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    viewModel.selectTab(AppViewTab.SPRAY_ADVISORY)
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Air, contentDescription = null, tint = Color(0xFF0288D1)) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Field Scouting Observations") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    viewModel.selectTab(AppViewTab.FIELD_SCOUT)
+                                },
+                                leadingIcon = { Icon(Icons.Filled.AssignmentTurnedIn, contentDescription = null, tint = Color(0xFF2E7D32)) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Crop Rotation Planner") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    viewModel.selectTab(AppViewTab.CROP_ROTATION)
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Autorenew, contentDescription = null, tint = Color(0xFF388E3C)) }
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("8 Agents Topology") },
                                 onClick = {
@@ -350,30 +424,92 @@ fun HarvestApp(
                         state = state,
                         viewModel = viewModel
                     )
-                    AppViewTab.COPILOT_CHAT -> CopilotScreen(
-                        state = state,
-                        messages = state.copilotMessages,
-                        onSendMessage = { viewModel.sendCopilotMessage(it) }
-                    )
-                    AppViewTab.PLANT_DOCTOR -> PlantDoctorScreen(
-                        state = state,
-                        viewModel = viewModel
-                    )
-                    AppViewTab.FIELD_MAP -> FieldMapScreen(
-                        state = state,
-                        viewModel = viewModel
-                    )
-                    AppViewTab.INPUTS_LEDGER -> InputsLedgerScreen(
-                        state = state,
-                        viewModel = viewModel
-                    )
-                    AppViewTab.AGENT_TOPOLOGY -> AgentTopologyScreen(
-                        agents = state.allAgents
-                    )
-                    AppViewTab.DATA_MODELS -> DataModelsScreen()
-                    AppViewTab.SCHEMA_SPEC -> SchemaSpecScreen(
-                        spec = state.dashboardSpec
-                    )
+                    AppViewTab.COPILOT_CHAT -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        CopilotScreen(
+                            state = state,
+                            messages = state.copilotMessages,
+                            onSendMessage = { viewModel.sendCopilotMessage(it) }
+                        )
+                    }
+                    AppViewTab.PLANT_DOCTOR -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        PlantDoctorScreen(
+                            state = state,
+                            viewModel = viewModel
+                        )
+                    }
+                    AppViewTab.FIELD_MAP -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        FieldMapScreen(
+                            state = state,
+                            viewModel = viewModel
+                        )
+                    }
+                    AppViewTab.SPRAY_ADVISORY -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        SprayAdvisoryScreen(
+                            state = state,
+                            viewModel = viewModel
+                        )
+                    }
+                    AppViewTab.FIELD_SCOUT -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        FieldScoutScreen(
+                            state = state,
+                            viewModel = viewModel
+                        )
+                    }
+                    AppViewTab.CROP_ROTATION -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        CropRotationScreen(
+                            state = state,
+                            viewModel = viewModel
+                        )
+                    }
+                    AppViewTab.INPUTS_LEDGER -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        InputsLedgerScreen(
+                            state = state,
+                            viewModel = viewModel
+                        )
+                    }
+                    AppViewTab.AGENT_TOPOLOGY -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        AgentTopologyScreen(
+                            agents = state.allAgents
+                        )
+                    }
+                    AppViewTab.DATA_MODELS -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        DataModelsScreen()
+                    }
+                    AppViewTab.SCHEMA_SPEC -> {
+                        androidx.activity.compose.BackHandler {
+                            viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD)
+                        }
+                        SchemaSpecScreen(
+                            spec = state.dashboardSpec
+                        )
+                    }
                 }
             }
         }

@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/the_harvest_icon_1791441220647"
+        android:drawable="@drawable/harvest_logo_premium_1791454573312"
         android:gravity="center" />
 </layer-list>

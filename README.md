@@ -18,6 +18,9 @@
 
 ### 2. Android Client (Jetpack Compose & Material Design 3)
 - **Dynamic Dashboard**: Schema-driven widget engine rendering telemetry, live weather forecasts, nitrogen meters, and action advisories.
+- **Atmospheric Spray Window & Drift Risk**: Real-time psychrometric Delta T calculator, wind velocity threshold alerts, temperature inversion hazard warnings, and EPA nozzle recommendations.
+- **Offline Field Scouting Logs**: Local pest and disease observations tracker with severity tags, action notes, and local-to-cloud reconciliation.
+- **Biological Crop Rotation Planner**: Multi-year succession and companion cover crop scheduler that breaks fungal pathogen lifecycles and calculates biological nitrogen fixation credits.
 - **Plant Doctor (Vision AI)**: Zero-permission photo picker and sample specimen selector analyzed by **Gemini 3.1 Pro Preview** (with fallback local pathology matrix).
 - **Field Map & Satellite NDVI**: Interactive polygon canvas mapping field coordinates, zone health distributions, and infrared reflection scales.
 - **Inputs & Calculators Ledger**: Live mathematical engines with explicit agronomical assumptions and CapEx/OpEx financial tables.

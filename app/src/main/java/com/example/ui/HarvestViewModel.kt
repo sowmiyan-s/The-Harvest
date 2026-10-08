@@ -7,11 +7,17 @@ import androidx.lifecycle.viewModelScope
 import com.example.agent.AgentDefinition
 import com.example.agent.AgentRegistry
 import com.example.data.firebase.FirebaseHarvestService
+import com.example.data.model.CropRotationalRecommendation
 import com.example.data.model.DashboardSpec
 import com.example.data.model.FarmProfile
 import com.example.data.model.FarmScale
+import com.example.data.model.FieldScoutLog
+import com.example.data.model.HourlyAgroForecast
+import com.example.data.model.SprayAdvisory
+import com.example.data.remote.AdvancedAgronomyEngine
 import com.example.data.remote.AgronomyRagEngine
 import com.example.data.remote.GeminiVisionClient
+import com.example.data.remote.LiveWeatherSoilData
 import com.example.data.remote.OpenMeteoClient
 import com.example.data.remote.PlantDiagnosisResult
 import com.example.data.repository.HarvestRepository
@@ -27,6 +33,9 @@ enum class AppViewTab(val label: String) {
     COPILOT_CHAT("Copilot AI"),
     PLANT_DOCTOR("Vision AI"),
     FIELD_MAP("Field & NDVI"),
+    SPRAY_ADVISORY("Spray Window"),
+    FIELD_SCOUT("Scout Logs"),
+    CROP_ROTATION("Rotation Plan"),
     INPUTS_LEDGER("Calculators"),
     AGENT_TOPOLOGY("8 Agents"),
     DATA_MODELS("Data & DB"),
@@ -39,15 +48,31 @@ data class HarvestUiState(
     val dashboardSpec: DashboardSpec,
     val allFarms: List<FarmProfile>,
     val allAgents: List<AgentDefinition> = AgentRegistry.ALL_AGENTS,
-    // Live Open-Meteo Weather & Soil Telemetry
+    // Live Open-Meteo Weather & Soil Telemetry (Realtime)
+    val liveWeather: LiveWeatherSoilData? = null,
     val liveTempCelsius: Double = 21.5,
+    val liveApparentTempCelsius: Double = 21.5,
     val liveHumidityPct: Double = 58.0,
     val liveSoilMoisturePct: Double = 34.2,
     val liveDailyEtcMm: Double = 3.8,
+    val liveWindSpeedKph: Double = 11.2,
+    val liveWindDirectionDeg: Int = 180,
+    val liveWindGustsKph: Double = 14.5,
+    val liveDeltaT: Double = 4.2,
+    val liveWeatherCondition: String = "Clear Sky",
+    val liveDewPointCelsius: Double = 11.0,
+    val liveUvIndex: Double = 4.2,
+    val livePressureHpa: Double = 1013.2,
     val chillingHoursAccumulated: Int = 680,
     val chillingHoursRequired: Int = 800,
     val isWeatherLoading: Boolean = false,
-    val weatherDataSource: String = "Open-Meteo Live",
+    val weatherDataSource: String = "Open-Meteo Live API",
+    val lastTelemetryUpdated: String = "Live Now",
+    val hourlyForecast: List<HourlyAgroForecast> = emptyList(),
+    // Advanced Agronomy Features
+    val sprayAdvisory: SprayAdvisory = AdvancedAgronomyEngine.computeSprayAdvisory(21.5, 58.0),
+    val scoutLogs: List<FieldScoutLog> = emptyList(),
+    val rotationalPlan: List<CropRotationalRecommendation> = emptyList(),
     // Interactive widget telemetry & user inputs (labeled assumptions)
     val microWaterCupsLogged: Int = 3,
     val scrapCompostKg: Double = 1.4,
@@ -77,6 +102,26 @@ class HarvestViewModel(
 
     private val initialFarm = repository.availableFarms.first()
     private val initialSpec = repository.getDashboardSpecForFarm(initialFarm)
+    private val initialScoutLogs = listOf(
+        FieldScoutLog(
+            farmId = initialFarm.id,
+            title = "South Ridge Aphid Pressure",
+            cropStage = "V4 Vegetative",
+            pestOrIssue = "Green peach aphid colonies on lower leaves",
+            severityLevel = "Moderate",
+            actionTaken = "Applied organic potassium salts of fatty acids (Neem)",
+            dateIso = "2026-10-06"
+        ),
+        FieldScoutLog(
+            farmId = initialFarm.id,
+            title = "Block B Infiltration Check",
+            cropStage = "Active Canopy",
+            pestOrIssue = "Slow drainage after 25mm rain event",
+            severityLevel = "Low",
+            actionTaken = "Aerated furrow alleys and verified cover crop roots",
+            dateIso = "2026-10-07"
+        )
+    )
 
     private val _uiState = MutableStateFlow(
         HarvestUiState(
@@ -84,6 +129,8 @@ class HarvestViewModel(
             dashboardSpec = initialSpec,
             allFarms = repository.availableFarms,
             firebaseUser = FirebaseHarvestService.currentUser,
+            scoutLogs = initialScoutLogs,
+            rotationalPlan = AdvancedAgronomyEngine.computeRotationalPlan(initialFarm),
             copilotMessages = listOf(
                 createInitialWelcomeMessage(initialFarm)
             )
@@ -119,6 +166,7 @@ class HarvestViewModel(
             allFarms = updatedFarms,
             selectedFarm = newFarm,
             dashboardSpec = newSpec,
+            rotationalPlan = AdvancedAgronomyEngine.computeRotationalPlan(newFarm),
             showOnboarding = false,
             bulkAcreageInput = newFarm.areaAcres,
             bulkNPKResultKg = newFarm.areaAcres * 80.0,
@@ -132,11 +180,16 @@ class HarvestViewModel(
         _uiState.value = _uiState.value.copy(
             selectedFarm = farm,
             dashboardSpec = newSpec,
+            rotationalPlan = AdvancedAgronomyEngine.computeRotationalPlan(farm),
             bulkAcreageInput = farm.areaAcres,
             bulkNPKResultKg = farm.areaAcres * 80.0,
             copilotMessages = listOf(createInitialWelcomeMessage(farm))
         )
         fetchLiveTelemetry(farm)
+    }
+
+    fun refreshLiveTelemetry() {
+        fetchLiveTelemetry(_uiState.value.selectedFarm)
     }
 
     private fun fetchLiveTelemetry(farm: FarmProfile) {
@@ -146,16 +199,69 @@ class HarvestViewModel(
                 latitude = farm.location.latitude,
                 longitude = farm.location.longitude
             )
+            val updatedAdvisory = AdvancedAgronomyEngine.computeSprayAdvisory(
+                tempCelsius = telemetry.currentTempCelsius,
+                humidityPct = telemetry.currentHumidityPct,
+                windSpeedKph = telemetry.windSpeedKph,
+                rainProbabilityPct = telemetry.rainProbabilityPct,
+                deltaTOverride = telemetry.deltaTCelsius
+            )
             _uiState.value = _uiState.value.copy(
+                liveWeather = telemetry,
                 liveTempCelsius = telemetry.currentTempCelsius,
+                liveApparentTempCelsius = telemetry.apparentTempCelsius,
                 liveHumidityPct = telemetry.currentHumidityPct,
                 liveSoilMoisturePct = telemetry.soilMoisturePct,
                 liveDailyEtcMm = telemetry.dailyEtcMm,
+                liveWindSpeedKph = telemetry.windSpeedKph,
+                liveWindDirectionDeg = telemetry.windDirectionDeg,
+                liveWindGustsKph = telemetry.windGustsKph,
+                liveDeltaT = telemetry.deltaTCelsius,
+                liveWeatherCondition = telemetry.weatherDescription,
+                liveDewPointCelsius = telemetry.dewPointCelsius,
+                liveUvIndex = telemetry.uvIndex,
+                livePressureHpa = telemetry.surfacePressureHpa,
                 chillingHoursAccumulated = telemetry.chillingHoursAccumulated,
                 isWeatherLoading = false,
-                weatherDataSource = telemetry.sourceLabel
+                weatherDataSource = telemetry.sourceLabel,
+                lastTelemetryUpdated = telemetry.lastUpdatedIso,
+                hourlyForecast = telemetry.hourlyForecast,
+                sprayAdvisory = updatedAdvisory
             )
         }
+    }
+
+    fun simulateSprayConditions(windSpeed: Double, rainRisk: Int) {
+        val currentTemp = _uiState.value.liveTempCelsius
+        val currentHumidity = _uiState.value.liveHumidityPct
+        val currentDeltaT = _uiState.value.liveDeltaT
+        val simulated = AdvancedAgronomyEngine.computeSprayAdvisory(
+            tempCelsius = currentTemp,
+            humidityPct = currentHumidity,
+            windSpeedKph = windSpeed,
+            rainProbabilityPct = rainRisk,
+            deltaTOverride = currentDeltaT
+        )
+        _uiState.value = _uiState.value.copy(sprayAdvisory = simulated)
+    }
+
+    fun resetSprayToLiveTelemetry() {
+        val weather = _uiState.value.liveWeather
+        if (weather != null) {
+            val liveAdvisory = AdvancedAgronomyEngine.computeSprayAdvisory(
+                tempCelsius = weather.currentTempCelsius,
+                humidityPct = weather.currentHumidityPct,
+                windSpeedKph = weather.windSpeedKph,
+                rainProbabilityPct = weather.rainProbabilityPct,
+                deltaTOverride = weather.deltaTCelsius
+            )
+            _uiState.value = _uiState.value.copy(sprayAdvisory = liveAdvisory)
+        }
+    }
+
+    fun addScoutLog(log: FieldScoutLog) {
+        val updated = listOf(log) + _uiState.value.scoutLogs
+        _uiState.value = _uiState.value.copy(scoutLogs = updated)
     }
 
     fun sendCopilotMessage(query: String) {

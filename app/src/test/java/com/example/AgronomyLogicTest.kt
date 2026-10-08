@@ -69,4 +69,59 @@ class AgronomyLogicTest {
         assertTrue(spec.widgets.isNotEmpty())
         assertTrue(spec.widgets.any { it.title.contains("Bulk") || it.title.contains("NDVI") })
     }
+
+    @Test
+    fun `test spray window drift hazard calculations`() {
+        // High wind scenario (>18 km/h) should be classified HAZARDOUS
+        val highWindAdvisory = com.example.data.remote.AdvancedAgronomyEngine.computeSprayAdvisory(
+            tempCelsius = 22.0,
+            humidityPct = 60.0,
+            windSpeedKph = 22.5,
+            rainProbabilityPct = 10
+        )
+        assertEquals(com.example.data.model.SprayConditionRating.HAZARDOUS, highWindAdvisory.rating)
+        assertTrue(highWindAdvisory.summary.contains("drift hazard"))
+
+        // Thermal inversion scenario (calm wind <3 km/h and cool morning)
+        val inversionAdvisory = com.example.data.remote.AdvancedAgronomyEngine.computeSprayAdvisory(
+            tempCelsius = 11.0,
+            humidityPct = 65.0,
+            windSpeedKph = 1.8,
+            rainProbabilityPct = 0
+        )
+        assertEquals(com.example.data.model.SprayConditionRating.HAZARDOUS, inversionAdvisory.rating)
+        assertTrue(inversionAdvisory.inversionRisk)
+
+        // Optimal window (moderate breeze 8 km/h, acceptable Delta T)
+        val optimalAdvisory = com.example.data.remote.AdvancedAgronomyEngine.computeSprayAdvisory(
+            tempCelsius = 20.0,
+            humidityPct = 60.0,
+            windSpeedKph = 9.0,
+            rainProbabilityPct = 10
+        )
+        assertEquals(com.example.data.model.SprayConditionRating.OPTIMAL, optimalAdvisory.rating)
+        assertFalse(optimalAdvisory.inversionRisk)
+    }
+
+    @Test
+    fun `test biological crop rotational planner disrupts pathogen cycles`() {
+        val wheatFarm = repository.availableFarms.first { it.scale == FarmScale.COMMERCIAL_500ACRE }
+        val rotation = com.example.data.remote.AdvancedAgronomyEngine.computeRotationalPlan(wheatFarm)
+        assertTrue(rotation.isNotEmpty())
+        assertTrue(rotation.any { it.family.contains("Fabaceae") })
+        assertTrue(rotation.any { it.nitrogenImpactKgPerAcre > 0.0 })
+        assertTrue(rotation.any { it.breakPestCycle.contains("Wheat") || it.breakPestCycle.contains("fungus") || it.breakPestCycle.contains("erosion") })
+    }
+
+    @Test
+    fun `test psychrometric Delta T calculation formula`() {
+        // Delta T at 20°C and 50% RH is typically between 4.0°C and 5.5°C
+        val deltaT = com.example.data.remote.OpenMeteoClient.calculateDeltaT(20.0, 50.0)
+        assertTrue("Delta T should be between 3.5 and 6.0 for 20C / 50% RH, got $deltaT", deltaT in 3.5..6.0)
+
+        // Delta T at 100% RH should be 0.0°C (saturated air)
+        val deltaTSaturated = com.example.data.remote.OpenMeteoClient.calculateDeltaT(20.0, 100.0)
+        assertEquals(0.0, deltaTSaturated, 0.2)
+    }
 }
+

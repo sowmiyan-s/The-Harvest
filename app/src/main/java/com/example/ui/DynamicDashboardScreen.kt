@@ -1,11 +1,15 @@
 package com.example.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,13 +20,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.model.*
 
 @Composable
@@ -47,6 +55,98 @@ fun DynamicDashboardScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Premium Hero Banner with Drone Farm Photography & Status
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .testTag("hero_farm_banner"),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_farm_hero_1791454586207),
+                        contentDescription = "Farm Aerial Overview",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    // Gradient scrim
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.2f),
+                                        Color.Black.copy(alpha = 0.85f)
+                                    )
+                                )
+                            )
+                    )
+                    // Text and badges
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(16.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                color = Color(0xFF14532D).copy(alpha = 0.85f),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Color(0xFF4ADE80))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF4ADE80))
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = state.selectedFarm.scale.displayName,
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                color = Color.Black.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "GPS: ${"%.3f".format(state.selectedFarm.location.latitude)}, ${"%.3f".format(state.selectedFarm.location.longitude)}",
+                                    color = Color(0xFFE2E8F0),
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = state.selectedFarm.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "${state.selectedFarm.cropName} • ${state.liveWeatherCondition} • ${"%.1f".format(state.liveTempCelsius)}°C",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFF1F5F9),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
         // Farm Header & Dynamic Persona Banner
         item {
             Card(
@@ -210,6 +310,80 @@ fun DynamicDashboardScreen(
             }
         }
 
+        // Real-Time Atmospheric Spray & Rotation Intelligence Banner
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("banner_agronomy_shortcuts"),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isDark) Color(0xFF263238) else Color(0xFFE8F5E9)
+                )
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Filled.Air,
+                                contentDescription = null,
+                                tint = Color(0xFF0288D1),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Spray Window: ${state.sprayAdvisory.rating.label}",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = onSurfaceColor
+                            )
+                        }
+
+                        TextButton(
+                            onClick = { viewModel.selectTab(AppViewTab.SPRAY_ADVISORY) },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text("View Advisory ▶", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Wind: ${"%.1f".format(state.sprayAdvisory.windSpeedKph)} km/h • Delta T: ${"%.1f".format(state.sprayAdvisory.deltaTCelsius)}°C • ${state.sprayAdvisory.recommendedNozzle}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onSurfaceColor.copy(alpha = 0.8f)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AssistChip(
+                            onClick = { viewModel.selectTab(AppViewTab.FIELD_SCOUT) },
+                            label = { Text("Field Scout (${state.scoutLogs.size} logs)", fontSize = 11.sp) },
+                            leadingIcon = {
+                                Icon(Icons.Filled.AssignmentTurnedIn, contentDescription = null, modifier = Modifier.size(14.dp))
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        AssistChip(
+                            onClick = { viewModel.selectTab(AppViewTab.CROP_ROTATION) },
+                            label = { Text("Rotation Plan", fontSize = 11.sp) },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Autorenew, contentDescription = null, modifier = Modifier.size(14.dp))
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
         // Widgets (Strictly rendered in priority order from DashboardSpec)
         items(spec.widgets.sortedBy { it.priorityOrder }) { widgetItem ->
             when (widgetItem.widgetType) {
@@ -225,12 +399,8 @@ fun DynamicDashboardScreen(
                 )
                 WidgetType.WEATHER_SOIL_CARD -> WeatherSoilWidget(
                     farm = state.selectedFarm,
-                    tempCelsius = state.liveTempCelsius,
-                    humidityPct = state.liveHumidityPct,
-                    soilMoisture = state.liveSoilMoisturePct,
-                    dailyEtc = state.liveDailyEtcMm,
-                    sourceLabel = state.weatherDataSource,
-                    isLoading = state.isWeatherLoading,
+                    state = state,
+                    onRefresh = { viewModel.refreshLiveTelemetry() },
                     isDark = isDark
                 )
                 WidgetType.MILESTONE_BADGES -> MilestoneBadgesWidget(
@@ -372,65 +542,321 @@ fun KitchenCompostWidget(compostKg: Double, onAddScrap: () -> Unit, isDark: Bool
 @Composable
 fun WeatherSoilWidget(
     farm: FarmProfile,
-    tempCelsius: Double,
-    humidityPct: Double,
-    soilMoisture: Double,
-    dailyEtc: Double,
-    sourceLabel: String,
-    isLoading: Boolean,
+    state: HarvestUiState,
+    onRefresh: () -> Unit,
     isDark: Boolean
 ) {
+    val deltaTRating = when {
+        state.liveDeltaT in 2.0..8.0 -> "Optimal (2-8°C)"
+        state.liveDeltaT < 2.0 -> "Low Inversion Risk"
+        else -> "High Evap Risk (>8°C)"
+    }
+    val deltaTColor = when {
+        state.liveDeltaT in 2.0..8.0 -> Color(0xFF16A34A)
+        state.liveDeltaT < 2.0 -> Color(0xFFD97706)
+        else -> Color(0xFFDC2626)
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().testTag("widget_weather_soil"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDark) Color(0xFF1E1E1E) else Color.White)
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("widget_weather_soil"),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark) Color(0xFF16241D) else Color.White
+        ),
+        border = BorderStroke(
+            1.dp,
+            if (isDark) Color(0xFF233E30) else Color(0xFFE2EBE6)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Header Row: Title + Live Pulse + Refresh Action
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.WbSunny, contentDescription = null, tint = Color(0xFFF57F17))
+                    Icon(
+                        Icons.Filled.WbSunny,
+                        contentDescription = null,
+                        tint = Color(0xFFF59E0B),
+                        modifier = Modifier.size(22.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Atmospheric & Soil Telemetry", fontWeight = FontWeight.Bold)
+                    Column {
+                        Text(
+                            "Realtime Meteorological & Soil Telemetry",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF22C55E))
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "● LIVE OPEN-METEO FEED",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF16A34A)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "• ${state.lastTelemetryUpdated}",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text("Live API", style = MaterialTheme.typography.labelSmall, color = Color(0xFF0288D1), fontWeight = FontWeight.Bold)
+
+                IconButton(
+                    onClick = onRefresh,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .testTag("btn_refresh_weather_widget")
+                ) {
+                    if (state.isWeatherLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFF16A34A)
+                        )
+                    } else {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = "Refresh Telemetry",
+                            tint = Color(0xFF16A34A),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("Air Temp", style = MaterialTheme.typography.labelSmall)
-                    Text("${"%.1f".format(tempCelsius)}°C", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
-                Column {
-                    Text("Volumetric Moisture", style = MaterialTheme.typography.labelSmall)
-                    Text("${"%.1f".format(soilMoisture)}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
-                }
-                Column {
-                    Text("Daily ETc", style = MaterialTheme.typography.labelSmall)
-                    Text("${"%.1f".format(dailyEtc)} mm", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                }
-                Column {
-                    Text("Humidity", style = MaterialTheme.typography.labelSmall)
-                    Text("${"%.0f".format(humidityPct)}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Weather Condition Highlight Banner
+            Surface(
+                color = if (isDark) Color(0xFF1B3327) else Color(0xFFF0FDF4),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, if (isDark) Color(0xFF2A523F) else Color(0xFFDCFCE7)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.CloudQueue,
+                            contentDescription = null,
+                            tint = Color(0xFF0284C7),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = state.liveWeatherCondition,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = if (isDark) Color(0xFF7DD3FC) else Color(0xFF0369A1)
+                        )
+                    }
+                    Text(
+                        text = "Feels like ${"%.1f".format(state.liveApparentTempCelsius)}°C • UV ${"%.1f".format(state.liveUvIndex)}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 6-Point Agronomic Telemetry Grid
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TelemetryStatCard(
+                    title = "Air Temp",
+                    value = "${"%.1f".format(state.liveTempCelsius)}°C",
+                    sub = "Baro ${"%.0f".format(state.livePressureHpa)} hPa",
+                    accentColor = Color(0xFFE11D48),
+                    modifier = Modifier.weight(1f),
+                    isDark = isDark
+                )
+                TelemetryStatCard(
+                    title = "Delta T (Evap)",
+                    value = "${"%.1f".format(state.liveDeltaT)}°C",
+                    sub = deltaTRating,
+                    accentColor = deltaTColor,
+                    modifier = Modifier.weight(1f),
+                    isDark = isDark
+                )
+                TelemetryStatCard(
+                    title = "Wind Velocity",
+                    value = "${"%.1f".format(state.liveWindSpeedKph)} kph",
+                    sub = "Gusts ${"%.1f".format(state.liveWindGustsKph)} kph",
+                    accentColor = Color(0xFF0284C7),
+                    modifier = Modifier.weight(1f),
+                    isDark = isDark
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TelemetryStatCard(
+                    title = "Soil Moisture",
+                    value = "${"%.1f".format(state.liveSoilMoisturePct)}%",
+                    sub = "0-1cm Volumetric",
+                    accentColor = Color(0xFF16A34A),
+                    modifier = Modifier.weight(1f),
+                    isDark = isDark
+                )
+                TelemetryStatCard(
+                    title = "Daily ETc",
+                    value = "${"%.1f".format(state.liveDailyEtcMm)} mm",
+                    sub = "Crop Water Demand",
+                    accentColor = Color(0xFF7C3AED),
+                    modifier = Modifier.weight(1f),
+                    isDark = isDark
+                )
+                TelemetryStatCard(
+                    title = "Humidity",
+                    value = "${"%.0f".format(state.liveHumidityPct)}%",
+                    sub = "Dew ${"%.1f".format(state.liveDewPointCelsius)}°C",
+                    accentColor = Color(0xFF0D9488),
+                    modifier = Modifier.weight(1f),
+                    isDark = isDark
+                )
+            }
+
+            // 12-Hour Hourly Agrometeorological Forecast Carousel
+            if (state.hourlyForecast.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = "Next 12-Hour Spray & Delta T Forecast",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    state.hourlyForecast.forEach { hour ->
+                        val badgeColor = when (hour.condition) {
+                            SprayConditionRating.OPTIMAL -> Color(0xFF16A34A)
+                            SprayConditionRating.CAUTION -> Color(0xFFD97706)
+                            SprayConditionRating.HAZARDOUS -> Color(0xFFDC2626)
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isDark) Color(0xFF1E2D25) else Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, badgeColor.copy(alpha = 0.5f)),
+                            modifier = Modifier.width(82.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    hour.timeLabel,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "${"%.0f".format(hour.tempCelsius)}°C",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                                Text(
+                                    "${"%.0f".format(hour.windSpeedKph)} kph",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = badgeColor.copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = "ΔT ${"%.1f".format(hour.deltaTCelsius)}",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = badgeColor,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Source: ${state.weatherDataSource}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF16A34A),
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "Grid: ${roundCoord(farm.location.latitude)}, ${roundCoord(farm.location.longitude)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TelemetryStatCard(
+    title: String,
+    value: String,
+    sub: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    isDark: Boolean
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = if (isDark) Color(0xFF1E2E25) else Color(0xFFF8FAF9),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.25f))
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
             Text(
-                "Source: $sourceLabel",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF1B5E20),
-                fontWeight = FontWeight.Medium
+                title,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                "Grid cell: ${roundCoord(farm.location.latitude)}, ${roundCoord(farm.location.longitude)} • 1.1km Redis spatial cache enabled",
-                style = MaterialTheme.typography.labelSmall,
+                value,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = accentColor
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                sub,
+                fontSize = 9.sp,
+                maxLines = 1,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
