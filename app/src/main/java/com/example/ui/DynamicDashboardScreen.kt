@@ -225,7 +225,12 @@ fun DynamicDashboardScreen(
                 )
                 WidgetType.WEATHER_SOIL_CARD -> WeatherSoilWidget(
                     farm = state.selectedFarm,
-                    soilMoisture = state.simulatedSoilMoisturePct,
+                    tempCelsius = state.liveTempCelsius,
+                    humidityPct = state.liveHumidityPct,
+                    soilMoisture = state.liveSoilMoisturePct,
+                    dailyEtc = state.liveDailyEtcMm,
+                    sourceLabel = state.weatherDataSource,
+                    isLoading = state.isWeatherLoading,
                     isDark = isDark
                 )
                 WidgetType.MILESTONE_BADGES -> MilestoneBadgesWidget(
@@ -365,7 +370,16 @@ fun KitchenCompostWidget(compostKg: Double, onAddScrap: () -> Unit, isDark: Bool
 }
 
 @Composable
-fun WeatherSoilWidget(farm: FarmProfile, soilMoisture: Double, isDark: Boolean) {
+fun WeatherSoilWidget(
+    farm: FarmProfile,
+    tempCelsius: Double,
+    humidityPct: Double,
+    soilMoisture: Double,
+    dailyEtc: Double,
+    sourceLabel: String,
+    isLoading: Boolean,
+    isDark: Boolean
+) {
     Card(
         modifier = Modifier.fillMaxWidth().testTag("widget_weather_soil"),
         shape = RoundedCornerShape(16.dp),
@@ -382,13 +396,17 @@ fun WeatherSoilWidget(farm: FarmProfile, soilMoisture: Double, isDark: Boolean) 
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Atmospheric & Soil Telemetry", fontWeight = FontWeight.Bold)
                 }
-                Text("Open-Meteo Live", style = MaterialTheme.typography.labelSmall, color = Color(0xFF0288D1))
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Live API", style = MaterialTheme.typography.labelSmall, color = Color(0xFF0288D1), fontWeight = FontWeight.Bold)
+                }
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("Air Temp", style = MaterialTheme.typography.labelSmall)
-                    Text("21.5°C", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("${"%.1f".format(tempCelsius)}°C", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Column {
                     Text("Volumetric Moisture", style = MaterialTheme.typography.labelSmall)
@@ -396,14 +414,20 @@ fun WeatherSoilWidget(farm: FarmProfile, soilMoisture: Double, isDark: Boolean) 
                 }
                 Column {
                     Text("Daily ETc", style = MaterialTheme.typography.labelSmall)
-                    Text("3.8 mm", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("${"%.1f".format(dailyEtc)} mm", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Column {
                     Text("Humidity", style = MaterialTheme.typography.labelSmall)
-                    Text("58%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("${"%.0f".format(humidityPct)}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Source: $sourceLabel",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF1B5E20),
+                fontWeight = FontWeight.Medium
+            )
             Text(
                 "Grid cell: ${roundCoord(farm.location.latitude)}, ${roundCoord(farm.location.longitude)} • 1.1km Redis spatial cache enabled",
                 style = MaterialTheme.typography.labelSmall,

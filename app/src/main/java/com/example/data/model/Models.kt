@@ -40,7 +40,8 @@ data class FarmProfile(
     val timezone: String = "UTC",
     val language: String = "en",
     val soilType: String = "Silty Loam",
-    val sowingDate: String? = null
+    val sowingDate: String? = null,
+    val polygon: List<LocationCoords> = emptyList()
 )
 
 data class ThemeSpec(

@@ -36,6 +36,7 @@ fun HarvestApp(
     val coroutineScope = rememberCoroutineScope()
 
     var isSigningIn by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
 
     // Dynamic root colors from active ThemeSpec
     val rootBgColor = if (isDark) Color(0xFF121212) else Color(0xFFF8F9FA)
@@ -68,7 +69,7 @@ fun HarvestApp(
                                 text = if (state.firebaseUser != null) {
                                     "Connected • ${state.firebaseUser?.displayName ?: "Farmer"}"
                                 } else {
-                                    "Farmers AI • Cloud Ready"
+                                    "Multi-Agent AI • Scale Ag"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = onBarColor.copy(alpha = 0.8f),
@@ -78,6 +79,7 @@ fun HarvestApp(
                     }
                 },
                 actions = {
+                    // Google Sign In & Sync
                     if (state.firebaseUser != null) {
                         IconButton(
                             onClick = { viewModel.syncCurrentFarmToFirebase(context) },
@@ -126,7 +128,7 @@ fun HarvestApp(
                             shape = RoundedCornerShape(20.dp),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier
-                                .padding(end = 8.dp)
+                                .padding(end = 4.dp)
                                 .testTag("btn_google_signin")
                         ) {
                             if (isSigningIn) {
@@ -146,6 +148,50 @@ fun HarvestApp(
                             }
                         }
                     }
+
+                    // Architecture & Data inspector overflow menu
+                    Box {
+                        IconButton(
+                            onClick = { showMoreMenu = true },
+                            modifier = Modifier.testTag("btn_more_menu")
+                        ) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = "More tools",
+                                tint = Color.White
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("8 Agents Topology") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    viewModel.selectTab(AppViewTab.AGENT_TOPOLOGY)
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Hub, contentDescription = null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Data & DB Schemas") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    viewModel.selectTab(AppViewTab.DATA_MODELS)
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Storage, contentDescription = null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Server JSON Spec") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    viewModel.selectTab(AppViewTab.SCHEMA_SPEC)
+                                },
+                                leadingIcon = { Icon(Icons.Filled.Code, contentDescription = null) }
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = barColor,
@@ -162,29 +208,36 @@ fun HarvestApp(
                     selected = state.currentTab == AppViewTab.DYNAMIC_DASHBOARD,
                     onClick = { viewModel.selectTab(AppViewTab.DYNAMIC_DASHBOARD) },
                     icon = { Icon(Icons.Filled.Dashboard, contentDescription = "Dashboard") },
-                    label = { Text("Dashboard", fontSize = 10.sp) },
+                    label = { Text("Dashboard", fontSize = 9.sp) },
                     modifier = Modifier.testTag("nav_tab_dashboard")
                 )
                 NavigationBarItem(
-                    selected = state.currentTab == AppViewTab.AGENT_TOPOLOGY,
-                    onClick = { viewModel.selectTab(AppViewTab.AGENT_TOPOLOGY) },
-                    icon = { Icon(Icons.Filled.Hub, contentDescription = "8 Agents") },
-                    label = { Text("8 Agents", fontSize = 10.sp) },
-                    modifier = Modifier.testTag("nav_tab_topology")
+                    selected = state.currentTab == AppViewTab.COPILOT_CHAT,
+                    onClick = { viewModel.selectTab(AppViewTab.COPILOT_CHAT) },
+                    icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = "Copilot AI") },
+                    label = { Text("Copilot", fontSize = 9.sp) },
+                    modifier = Modifier.testTag("nav_tab_copilot")
                 )
                 NavigationBarItem(
-                    selected = state.currentTab == AppViewTab.DATA_MODELS,
-                    onClick = { viewModel.selectTab(AppViewTab.DATA_MODELS) },
-                    icon = { Icon(Icons.Filled.Storage, contentDescription = "Data Models") },
-                    label = { Text("Data & DB", fontSize = 10.sp) },
-                    modifier = Modifier.testTag("nav_tab_data_models")
+                    selected = state.currentTab == AppViewTab.PLANT_DOCTOR,
+                    onClick = { viewModel.selectTab(AppViewTab.PLANT_DOCTOR) },
+                    icon = { Icon(Icons.Filled.DocumentScanner, contentDescription = "Plant Doctor") },
+                    label = { Text("Vision AI", fontSize = 9.sp) },
+                    modifier = Modifier.testTag("nav_tab_plant_doctor")
                 )
                 NavigationBarItem(
-                    selected = state.currentTab == AppViewTab.SCHEMA_SPEC,
-                    onClick = { viewModel.selectTab(AppViewTab.SCHEMA_SPEC) },
-                    icon = { Icon(Icons.Filled.Code, contentDescription = "JSON Schema") },
-                    label = { Text("JSON Spec", fontSize = 10.sp) },
-                    modifier = Modifier.testTag("nav_tab_schema_spec")
+                    selected = state.currentTab == AppViewTab.FIELD_MAP,
+                    onClick = { viewModel.selectTab(AppViewTab.FIELD_MAP) },
+                    icon = { Icon(Icons.Filled.SatelliteAlt, contentDescription = "Field Map") },
+                    label = { Text("Field & NDVI", fontSize = 9.sp) },
+                    modifier = Modifier.testTag("nav_tab_field_map")
+                )
+                NavigationBarItem(
+                    selected = state.currentTab == AppViewTab.INPUTS_LEDGER,
+                    onClick = { viewModel.selectTab(AppViewTab.INPUTS_LEDGER) },
+                    icon = { Icon(Icons.Filled.Calculate, contentDescription = "Calculators") },
+                    label = { Text("Calculators", fontSize = 9.sp) },
+                    modifier = Modifier.testTag("nav_tab_calculators")
                 )
             }
         }
@@ -266,22 +319,62 @@ fun HarvestApp(
                             modifier = Modifier.testTag("chip_farm_${farm.id}")
                         )
                     }
+
+                    // Add New Farm Button to launch Onboarding Wizard
+                    AssistChip(
+                        onClick = { viewModel.openOnboarding() },
+                        label = { Text("+ New Farm", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = Color(0xFF2E7D32),
+                            labelColor = Color.White,
+                            leadingIconContentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.testTag("btn_launch_onboarding")
+                    )
                 }
             }
 
             // Main View Content
-            when (state.currentTab) {
-                AppViewTab.DYNAMIC_DASHBOARD -> DynamicDashboardScreen(
-                    state = state,
-                    viewModel = viewModel
+            if (state.showOnboarding) {
+                OnboardingScreen(
+                    onDismiss = { viewModel.closeOnboarding() },
+                    onComplete = { viewModel.addNewFarm(it) }
                 )
-                AppViewTab.AGENT_TOPOLOGY -> AgentTopologyScreen(
-                    agents = state.allAgents
-                )
-                AppViewTab.DATA_MODELS -> DataModelsScreen()
-                AppViewTab.SCHEMA_SPEC -> SchemaSpecScreen(
-                    spec = state.dashboardSpec
-                )
+            } else {
+                when (state.currentTab) {
+                    AppViewTab.DYNAMIC_DASHBOARD -> DynamicDashboardScreen(
+                        state = state,
+                        viewModel = viewModel
+                    )
+                    AppViewTab.COPILOT_CHAT -> CopilotScreen(
+                        state = state,
+                        messages = state.copilotMessages,
+                        onSendMessage = { viewModel.sendCopilotMessage(it) }
+                    )
+                    AppViewTab.PLANT_DOCTOR -> PlantDoctorScreen(
+                        state = state,
+                        viewModel = viewModel
+                    )
+                    AppViewTab.FIELD_MAP -> FieldMapScreen(
+                        state = state,
+                        viewModel = viewModel
+                    )
+                    AppViewTab.INPUTS_LEDGER -> InputsLedgerScreen(
+                        state = state,
+                        viewModel = viewModel
+                    )
+                    AppViewTab.AGENT_TOPOLOGY -> AgentTopologyScreen(
+                        agents = state.allAgents
+                    )
+                    AppViewTab.DATA_MODELS -> DataModelsScreen()
+                    AppViewTab.SCHEMA_SPEC -> SchemaSpecScreen(
+                        spec = state.dashboardSpec
+                    )
+                }
             }
         }
     }
