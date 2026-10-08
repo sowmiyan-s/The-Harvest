@@ -65,13 +65,17 @@ To enable live Gemini Vision plant pathology analysis:
 
 #### Step 4: Run the App on an Emulator or Physical Device
 1. In the toolbar, select an Android Virtual Device (AVD with API 30+ recommended) or connect a physical Android device with **USB Debugging** enabled.
-2. Ensure the run configuration is set to **`app`**.
-3. Click the green **Run ▶** button (or press `Shift + F10`).
-4. Android Studio will assemble the debug APK and launch **The Harvest** directly on the device.
+2. The project includes pre-configured run configurations located in `.idea/runConfigurations`:
+   - **`app`**: Launches the main Android application (`MainActivity`) on your selected emulator or physical device.
+   - **`All Unit Tests`**: Runs all JVM & Robolectric unit tests (`:app:testDebugUnitTest`).
+3. Select **`app`** from the run configuration dropdown.
+4. Click the green **Run ▶** button (or press `Shift + F10`).
+5. Android Studio will assemble the debug APK and launch **The Harvest** directly on the device.
 
 #### Step 5: Running Unit & Robolectric Tests
 To run unit and architecture tests in Android Studio:
-- Open the **Terminal** tab in Android Studio and run:
+- Select **`All Unit Tests`** from the run configuration dropdown and click **Run ▶** (or `Shift + F10`).
+- Or open the **Terminal** tab in Android Studio and run:
   ```bash
   gradle :app:testDebugUnitTest
   ```
