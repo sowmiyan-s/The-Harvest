@@ -1,0 +1,123 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.email is string && data.email.size() <= 200 &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidFarm(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.scale in ['micro_pot', 'small_1acre', 'medium_10acre', 'commercial_500acre'] &&
+             data.cropName is string && data.cropName.size() > 0 && data.cropName.size() <= 120 &&
+             data.isOrganic is bool &&
+             (!('cropScientificName' in data) || (data.cropScientificName is string && data.cropScientificName.size() <= 200)) &&
+             (!('lifecycle' in data) || data.lifecycle in ['annual', 'perennial', 'biennial']) &&
+             (!('areaAcres' in data) || data.areaAcres is number) &&
+             (!('latitude' in data) || data.latitude is number) &&
+             (!('longitude' in data) || data.longitude is number) &&
+             (!('locationName' in data) || (data.locationName is string && data.locationName.size() <= 150)) &&
+             (!('soilType' in data) || (data.soilType is string && data.soilType.size() <= 100)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidLogEntry(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.farmId is string && data.farmId.size() <= 128 &&
+             data.category is string && data.category.size() <= 50 &&
+             (!('quantity' in data) || data.quantity is number) &&
+             (!('unit' in data) || (data.unit is string && data.unit.size() <= 30)) &&
+             (!('costAmount' in data) || data.costAmount is number) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000));
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming());
+
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+
+      // Farms owned by user
+      match /farms/{farmId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+        allow create: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidFarm(incoming());
+
+        allow update: if isSignedIn() &&
+                         request.auth.uid == userId &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidFarm(incoming());
+
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+
+        // Log entries for farm
+        match /log_entries/{logId} {
+          allow get, list: if isSignedIn() && request.auth.uid == userId;
+
+          allow create: if isSignedIn() &&
+                           request.auth.uid == userId &&
+                           incoming().userId == request.auth.uid &&
+                           incoming().farmId == farmId &&
+                           incoming().createdAt is timestamp &&
+                           incoming().createdAt <= request.time &&
+                           isValidLogEntry(incoming());
+
+          allow update: if isSignedIn() &&
+                           request.auth.uid == userId &&
+                           incoming().userId == existing().userId &&
+                           incoming().farmId == existing().farmId &&
+                           incoming().createdAt == existing().createdAt &&
+                           isValidLogEntry(incoming());
+
+          allow delete: if isSignedIn() && request.auth.uid == userId;
+        }
+      }
+    }
+  }
+}

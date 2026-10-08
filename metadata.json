@@ -1,0 +1,6 @@
+{
+  "name": "The Harvest",
+  "description": "Multi-agent AI assistant for farmers of all scales: micro-pot to industrial acreage. Dynamic dashboard engine, live agronomy & weather intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

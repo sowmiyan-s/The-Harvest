@@ -1,0 +1,14 @@
+{
+  "name": "@the-harvest/shared-contracts",
+  "version": "1.0.0",
+  "description": "Typed contracts and dashboard specifications for The Harvest multi-agent ecosystem",
+  "main": "dist/contracts.js",
+  "types": "dist/contracts.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src/ --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

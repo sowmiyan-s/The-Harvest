@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile holding preferences and settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "createdAt"]
+    },
+    "Farm": {
+      "title": "Farm",
+      "description": "Farm definition with crop, scale, coordinates, and organic flag",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "scale": { "type": "string", "enum": ["micro_pot", "small_1acre", "medium_10acre", "commercial_500acre"] },
+        "cropName": { "type": "string" },
+        "cropScientificName": { "type": "string" },
+        "lifecycle": { "type": "string", "enum": ["annual", "perennial", "biennial"] },
+        "isOrganic": { "type": "boolean" },
+        "areaAcres": { "type": "number" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "locationName": { "type": "string" },
+        "soilType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "scale", "cropName", "isOrganic", "createdAt"]
+    },
+    "LogEntry": {
+      "title": "LogEntry",
+      "description": "Activity, watering, compost, and expense ledger logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "farmId": { "type": "string" },
+        "category": { "type": "string" },
+        "quantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "costAmount": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "farmId", "category", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/farms/{farmId}": {
+      "schema": "Farm",
+      "description": "Farms owned by the user"
+    },
+    "/users/{userId}/farms/{farmId}/log_entries/{logId}": {
+      "schema": "LogEntry",
+      "description": "Activity logs and expense records for a farm"
+    }
+  }
+}

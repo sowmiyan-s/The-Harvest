@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://theharvest.ai/schemas/v1/dashboard-spec.schema.json",
+  "title": "DashboardSpec",
+  "description": "Server-driven dashboard schema specification that dynamically adapts the mobile UI based on farm scale, crop lifecycle, location, and farming methodology.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "scale",
+    "crop",
+    "lifecycle",
+    "is_organic",
+    "language",
+    "copy_tone",
+    "theme",
+    "widgets"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "scale": {
+      "type": "string",
+      "enum": [
+        "micro_pot",
+        "small_1acre",
+        "medium_10acre",
+        "commercial_500acre"
+      ]
+    },
+    "crop": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lifecycle": {
+      "type": "string",
+      "enum": ["annual", "perennial", "biennial"]
+    },
+    "is_organic": {
+      "type": "boolean"
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+    },
+    "copy_tone": {
+      "type": "string",
+      "enum": [
+        "playful_educational",
+        "practical_artisan",
+        "commercial_agronomic"
+      ]
+    },
+    "theme": {
+      "type": "object",
+      "required": [
+        "id",
+        "primary_color",
+        "secondary_color",
+        "background_color",
+        "surface_color",
+        "accent_color",
+        "dark_mode",
+        "density"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "primary_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "secondary_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "background_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "surface_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "accent_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "dark_mode": { "type": "boolean" },
+        "density": {
+          "type": "string",
+          "enum": ["compact", "comfortable", "data_dense"]
+        }
+      }
+    },
+    "quick_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "icon_name", "action_type"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "icon_name": { "type": "string" },
+          "action_type": { "type": "string" },
+          "payload": { "type": "object" }
+        }
+      }
+    },
+    "widgets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "widget_type", "title", "priority_order", "grid_span"],
+        "properties": {
+          "id": { "type": "string" },
+          "widget_type": {
+            "type": "string",
+            "enum": [
+              "watering_cup_log",
+              "kitchen_compost_helper",
+              "milestone_badges",
+              "weather_soil_card",
+              "bulk_input_calculator",
+              "satellite_ndvi_map",
+              "capex_opex_ledger",
+              "winter_chilling_gauge",
+              "multi_year_roi_tracker",
+              "annual_growth_timeline",
+              "copilot_quick_actions"
+            ]
+          },
+          "title": { "type": "string" },
+          "priority_order": { "type": "integer", "minimum": 0 },
+          "grid_span": { "type": "integer", "minimum": 1, "maximum": 4 },
+          "params": { "type": "object" }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
